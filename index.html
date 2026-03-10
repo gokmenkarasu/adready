@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdReady — Reklam Başlangıç Danışmanı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09091a;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.06);
+  --surface-h:rgba(255,255,255,0.09);--border:rgba(255,255,255,0.07);--border-h:rgba(255,255,255,0.14);
+  --text:#ededf4;--text-m:rgba(237,237,244,0.72);--text-d:rgba(237,237,244,0.48);
+  --accent:#7c6df0;--accent-d:rgba(124,109,240,0.14);--gold:#f5b731;--gold-d:rgba(245,183,49,0.13);
+  --green:#34d399;--green-d:rgba(52,211,153,0.13);--red:#f87171;--red-d:rgba(248,113,113,0.12);
+  --orange:#fb923c;--orange-d:rgba(251,146,60,0.13);--blue:#60a5fa;--blue-d:rgba(96,165,250,0.13);
+  --pink:#f472b6;--pink-d:rgba(244,114,182,0.13);--r:14px;--rs:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* === LAYOUT === */
+.app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* === HEADER === */
+.hdr{text-align:center;padding:40px 20px 28px;position:relative}
+.hdr::after{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+.logo{display:inline-flex;align-items:center;gap:9px;margin-bottom:16px}
+.logo-i{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),#a78bfa);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.logo-t{text-align:left}.logo-t .b{font-size:.9rem;font-weight:800}.logo-t .s{font-size:.58rem;color:var(--text-d);font-weight:500;letter-spacing:1px;text-transform:uppercase}
+.hdr h1{font-size:clamp(1.5rem,3.8vw,2.3rem);font-weight:900;line-height:1.15;margin-bottom:8px}
+.hdr h1 em{font-style:normal;background:linear-gradient(135deg,var(--gold),#ff9f43);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr p{color:var(--text-d);font-size:.86rem;max-width:460px;margin:0 auto;line-height:1.6}
+.badge{display:inline-flex;align-items:center;gap:5px;background:var(--green-d);border:1px solid rgba(52,211,153,0.2);padding:3px 11px;border-radius:18px;font-size:.62rem;font-weight:600;color:var(--green);margin-top:10px}
+
+/* === MAIN === */
+.main{flex:1;max-width:640px;width:100%;margin:0 auto;padding:20px 16px 100px}
+
+/* === PROGRESS STEPPER === */
+.stepper{display:flex;align-items:center;justify-content:center;gap:0;margin:0 0 28px;padding:8px 0}
+.stp{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:44px}
+.stp-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.08);transition:all .4s cubic-bezier(.16,1,.3,1);border:2px solid transparent}
+.stp-dot.done{background:var(--accent);border-color:var(--accent)}
+.stp-dot.active{background:var(--gold);border-color:var(--gold);width:12px;height:12px;box-shadow:0 0 12px var(--gold-d)}
+.stp-line{width:28px;height:2px;background:rgba(255,255,255,0.06);margin-bottom:18px;transition:background .4s}
+.stp-line.done{background:rgba(124,109,240,0.4)}
+.stp-label{font-size:.52rem;font-weight:600;color:var(--text-d);text-align:center;max-width:56px;line-height:1.2;transition:color .3s}
+.stp-label.active{color:var(--gold)}.stp-label.done{color:var(--accent)}
+
+/* === QUESTION VIEW === */
+.q-view{animation:fadeUp .45s cubic-bezier(.16,1,.3,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+.advisor-note{display:flex;gap:9px;align-items:flex-start;margin-bottom:18px;animation:fadeUp .35s ease}
+.advisor-av{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),#a78bfa);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+.advisor-msg{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);border-top-left-radius:4px;padding:10px 14px;font-size:.84rem;line-height:1.55;color:var(--text-m);max-width:90%}
+
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden}
+.q-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--gold),var(--accent));background-size:200%;animation:shimBar 3s linear infinite}
+@keyframes shimBar{0%{background-position:0%}100%{background-position:200%}}
+.q-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;background:var(--accent-d);border:1px solid rgba(124,109,240,0.25);border-radius:7px;font-size:.7rem;font-weight:700;color:var(--accent);margin-bottom:10px}
+.q-text{font-size:1.15rem;font-weight:700;line-height:1.4;margin-bottom:20px}
+.q-sub{font-size:.78rem;color:var(--text-d);margin-top:-14px;margin-bottom:18px}
+
+/* Options */
+.opts{display:flex;flex-direction:column;gap:7px}
+.oc{display:flex;align-items:center;gap:11px;padding:13px 15px;background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .2s cubic-bezier(.16,1,.3,1);font-family:inherit;color:var(--text);font-size:.84rem;font-weight:500;text-align:left;line-height:1.4;position:relative}
+.oc:hover{background:var(--surface-h);border-color:var(--border-h);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.oc:active{transform:translateY(0)}
+.oc .ic{font-size:1.3rem;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03);border-radius:9px}
+.oc .ct{flex:1}.oc .lb{font-weight:600;font-size:.83rem}.oc .ds{font-size:.7rem;color:var(--text-d);font-weight:400}
+.oc .kb{position:absolute;top:6px;right:8px;min-width:17px;height:15px;display:flex;align-items:center;justify-content:center;padding:0 4px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:3px;font-size:.52rem;font-weight:700;color:var(--text-d)}
+
+/* === RESULT VIEW === */
+.result-view{animation:fadeUp .5s cubic-bezier(.16,1,.3,1)}
+
+/* Hero */
+.res-hero{border-radius:16px;overflow:hidden;margin-bottom:16px;position:relative}
+.res-hero-inner{padding:30px 22px;text-align:center;position:relative}
+.res-hero-inner::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 40%,rgba(255,255,255,.12),transparent 60%)}
+.res-hero-inner.awareness{background:linear-gradient(135deg,#6c5ce7,#a78bfa)}.res-hero-inner.traffic{background:linear-gradient(135deg,#3b82f6,#93c5fd)}.res-hero-inner.engagement{background:linear-gradient(135deg,#ec4899,#f9a8d4)}.res-hero-inner.leads{background:linear-gradient(135deg,#f59e0b,#fcd34d)}.res-hero-inner.sales{background:linear-gradient(135deg,#10b981,#6ee7b7)}.res-hero-inner.app_promotion{background:linear-gradient(135deg,#6b7280,#d1d5db)}
+.res-readiness-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(4px);padding:4px 12px;border-radius:16px;font-size:.68rem;font-weight:700;color:#fff;margin-bottom:14px}
+.res-icon{font-size:2.6rem;margin-bottom:8px;position:relative}
+.res-name{font-size:1.6rem;font-weight:900;color:#fff;position:relative;text-shadow:0 2px 8px rgba(0,0,0,.15)}
+.res-sub{font-size:.8rem;color:rgba(255,255,255,.7);margin-top:3px;position:relative}
+
+/* Layer cards */
+.layer{margin-bottom:12px}
+.lc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.lc-head{padding:16px 18px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s}
+.lc-head:hover{background:var(--surface2)}
+.lc-head .li{font-size:.92rem}.lc-head .lt{flex:1;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-m)}
+.lc-head .arrow{font-size:.7rem;color:var(--text-d);transition:transform .3s}
+.lc-head.open .arrow{transform:rotate(180deg)}
+.lc-body{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.16,1,.3,1)}
+.lc-body.open{max-height:2000px}
+.lc-content{padding:0 18px 18px}
+
+/* Layer 1 — always open */
+.layer1-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.layer1-why{font-size:.84rem;line-height:1.65;color:var(--text-m);margin-top:10px}
+.layer1-why strong{color:var(--text)}
+
+/* Readiness */
+.readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.rd-item{padding:12px;border-radius:var(--rs);display:flex;align-items:flex-start;gap:8px}
+.rd-item.green{background:var(--green-d);border:1px solid rgba(52,211,153,.15)}
+.rd-item.yellow{background:var(--gold-d);border:1px solid rgba(245,183,49,.15)}
+.rd-item.red{background:var(--red-d);border:1px solid rgba(248,113,113,.15)}
+.rd-light{font-size:1rem;flex-shrink:0}.rd-body{flex:1}
+.rd-label{font-size:.72rem;font-weight:700;margin-bottom:2px}
+.rd-item.green .rd-label{color:var(--green)}.rd-item.yellow .rd-label{color:var(--gold)}.rd-item.red .rd-label{color:var(--red)}
+.rd-desc{font-size:.68rem;color:var(--text-d);line-height:1.4}
+
+/* Checklist */
+.ck{display:flex;gap:8px;padding:9px 11px;border-radius:8px;font-size:.78rem;line-height:1.5;margin-bottom:6px}
+.ck.must{background:var(--red-d);border:1px solid rgba(248,113,113,.1)}.ck.should{background:var(--gold-d);border:1px solid rgba(245,183,49,.1)}.ck.ok{background:var(--green-d);border:1px solid rgba(52,211,153,.1)}
+.ck .ci{flex-shrink:0;font-size:.85rem;margin-top:1px}.ck .cx{color:var(--text-d)}.ck .cx strong{color:var(--text)}
+
+/* 14 day plan */
+.plan-phase{padding:14px;border-radius:var(--rs);background:rgba(255,255,255,.02);border:1px solid var(--border);margin-bottom:8px}
+.plan-phase-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.plan-days{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:4px;color:#fff}
+.plan-title{font-size:.82rem;font-weight:700;color:var(--text)}
+.plan-tasks{font-size:.76rem;color:var(--text-d);line-height:1.6}
+.plan-tasks li{margin-bottom:3px}
+
+/* Dont do */
+.dont{display:flex;gap:8px;padding:10px 12px;background:var(--red-d);border:1px solid rgba(248,113,113,.1);border-radius:8px;font-size:.78rem;line-height:1.5;color:var(--text-d);margin-bottom:6px}
+.dont strong{color:var(--text)}
+
+/* Success check */
+.suc{display:flex;gap:8px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:.78rem;line-height:1.5;color:var(--text-d);margin-bottom:6px}
+
+/* Score display */
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.score-chip{padding:4px 10px;border-radius:6px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.score-chip.best{background:var(--green-d);color:var(--green);border:1px solid rgba(52,211,153,.2)}
+.score-chip.alt{background:var(--blue-d);color:var(--blue);border:1px solid rgba(96,165,250,.2)}
+.score-chip.skip{background:var(--surface2);color:var(--text-d);border:1px solid var(--border)}
+.score-name{font-size:.78rem;color:var(--text-m);flex:1}
+
+/* Tip */
+.tip{display:flex;gap:8px;padding:9px 11px;background:rgba(255,255,255,.02);border-radius:8px;font-size:.78rem;line-height:1.5;color:var(--text-d);margin-bottom:6px}
+.tip strong{color:var(--text)}
+
+/* Special cards */
+.special{border-radius:var(--r);padding:14px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start}
+.special .si{font-size:1.3rem;flex-shrink:0;margin-top:1px}.special .st{font-size:.8rem;line-height:1.55;color:var(--text-m)}
+.special .st strong{color:var(--text)}
+.special.wa{background:var(--green-d);border:1px solid rgba(52,211,153,.15)}
+.special.noweb{background:var(--orange-d);border:1px solid rgba(251,146,60,.15)}
+.special.pixel{background:var(--blue-d);border:1px solid rgba(96,165,250,.15)}
+.special.budget{background:var(--gold-d);border:1px solid rgba(245,183,49,.15)}
+.special.beginner{background:var(--accent-d);border:1px solid rgba(124,109,240,.15)}
+
+/* Actions */
+.acts{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.ab{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--rs);font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+.ab.pr{background:var(--accent);color:#fff}.ab.pr:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.ab.gh{background:var(--surface);border:1px solid var(--border);color:var(--text-m)}.ab.gh:hover{background:var(--surface-h);color:var(--text)}
+
+/* Confetti */
+.conf{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden}
+.cp{position:absolute;top:-12px;animation:cfall linear forwards}
+@keyframes cfall{0%{transform:translateY(0) rotate(0) scale(1);opacity:1}85%{opacity:1}100%{transform:translateY(105vh) rotate(720deg) scale(.4);opacity:0}}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:rgba(52,211,153,.92);backdrop-filter:blur(10px);color:#fff;padding:7px 17px;border-radius:9px;font-size:.78rem;font-weight:600;z-index:9999;transition:transform .4s cubic-bezier(.16,1,.3,1);pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:640px){
+  .hdr{padding:28px 14px 20px}.main{padding:14px 10px 100px}
+  .oc .kb{display:none}.readiness-grid{grid-template-columns:1fr}
+  .res-name{font-size:1.35rem}.q-text{font-size:1.05rem}
+  .stepper{gap:0;overflow-x:auto;justify-content:flex-start;padding:8px 4px}
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="app">
+  <div class="hdr">
+    <div class="logo"><div class="logo-i">🚀</div><div class="logo-t"><div class="b">AdReady</div><div class="s">Reklam Başlangıç Danışmanı</div></div></div>
+    <h1><em>İlk Reklamında</em><br>Para Kaybetme</h1>
+    <p>Birkaç soruya cevap ver. Hazırlığını kontrol edelim, eksiklerini gösterelim, sana özel başlangıç planı oluşturalım.</p>
+    <div class="badge">✓ 2025-2026 Meta ODAX güncel · 3 dakikada sonuç</div>
+  </div>
+  <div class="main">
+    <div id="stepper" class="stepper"></div>
+    <div id="view"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  OBJECTIVES DB
+// ══════════════════════════════════════
+const OBJ={
+  awareness:{name:"Awareness",tr:"Bilinirlik",icon:"👁️",color:"#7c6df0",grad:"awareness",sub:"Markayı tanıt, akılda kal",
+    desc:"Reklamını <strong>en çok kişiye</strong> gösterir ve akılda kalıcılığı artırır. Yeni marka veya ürün tanıtımında en etkili hedef.",
+    tips:[
+      {e:"📺",t:"<strong>Video reklamlar</strong> bu hedefte en iyi sonucu verir — 15 saniyelik dikkat çekici videolar hazırla."},
+      {e:"🌍",t:"Hedef kitleyi <strong>geniş tut</strong>. Algoritma en uygun kişileri kendisi bulur."},
+      {e:"⏱️",t:"Minimum <strong>2 hafta</strong> sabırla bekle — bilinirlik kampanyaları zaman ister."}
+    ],
+    budget:{min:"₺50/gün",rec:"₺100-250/gün"},
+    setup:["Meta Business Suite hesabı aç","\"Awareness\" hedefini seç","Hedef kitleni konum ve yaşa göre belirle","Video veya görsel yükle","Bütçe ve süre ayarla → Yayınla"],
+    kpi:["Reach","Ad Recall Lift","CPM"]
+  },
+  traffic:{name:"Traffic",tr:"Trafik",icon:"🔗",color:"#3b82f6",grad:"traffic",sub:"Web sitene ziyaretçi çek",
+    desc:"İnsanları <strong>web sitene veya landing page'ine</strong> yönlendirir. Meta, tıklama olasılığı yüksek kişilere reklamını gösterir.",
+    tips:[
+      {e:"🖱️",t:"\"Landing Page Views\" optimizasyonu seç — <strong>gerçekten sayfanı açan</strong> kişileri hedefler."},
+      {e:"📱",t:"Sayfan <strong>mobil uyumlu</strong> olsun — trafiğin %80+'ı mobilden gelecek."},
+      {e:"🧪",t:"En az <strong>3-4 farklı görsel</strong> test et, en iyisini bul."}
+    ],
+    budget:{min:"₺30/gün",rec:"₺75-200/gün"},
+    setup:["Facebook Pixel'i web sitene kur","\"Traffic\" hedefini seç","URL'ni gir, \"Landing Page Views\" seç","Hedef kitleni belirle","Bütçe ayarla → Yayınla"],
+    kpi:["Link Clicks","Landing Page Views","CPC","CTR"]
+  },
+  engagement:{name:"Engagement",tr:"Etkileşim",icon:"💬",color:"#ec4899",grad:"engagement",sub:"Beğeni, yorum, paylaşım al",
+    desc:"İçeriklerinle insanların <strong>aktif olarak ilgilenmesini</strong> sağlar — beğeni, yorum, paylaşım ve mesaj dahil.",
+    tips:[
+      {e:"🔥",t:"<strong>İyi performans gösteren organik postlarını</strong> boost et — sıfırdan oluşturmaktan daha etkili."},
+      {e:"❓",t:"Soru soran içerikler yaz: <strong>\"Siz hangisini tercih edersiniz?\"</strong> gibi CTA'lar çok iyi çalışır."},
+      {e:"🎥",t:"Video içerikler statik görsellere göre <strong>3-5x daha fazla etkileşim</strong> alır."}
+    ],
+    budget:{min:"₺20/gün",rec:"₺50-120/gün"},
+    setup:["Etkileşim almak istediğin postu hazırla (veya mevcut birini seç)","\"Engagement\" hedefini seç","Post engagement, video views veya messages seç","Kitleni ilgi alanlarına göre daralt","Bütçe ayarla → Yayınla"],
+    kpi:["Post Engagement","Video Views","CPE","Shares"]
+  },
+  leads:{name:"Leads",tr:"Potansiyel Müşteri",icon:"📋",color:"#f59e0b",grad:"leads",sub:"İletişim bilgilerini topla",
+    desc:"Potansiyel müşterilerden <strong>e-posta, telefon, isim</strong> gibi bilgileri toplar. Facebook içindeki hazır formlarla siteden ayrılmadan bilgi bırakabilirler.",
+    tips:[
+      {e:"📝",t:"Form alanlarını <strong>kısa tut (2-3 alan max)</strong>. Her ek alan dönüşümü %10-15 düşürür."},
+      {e:"🎁",t:"Karşılığında bir şey sun: <strong>ücretsiz e-kitap, indirim kodu, deneme</strong> — lead magnet şart."},
+      {e:"⚡",t:"<strong>Instant Forms</strong> (Facebook içi form) kullan — web formlarından 2-3x daha yüksek dönüşüm."}
+    ],
+    budget:{min:"₺40/gün",rec:"₺100-250/gün"},
+    setup:["Lead magnet hazırla (e-kitap, indirim vb.)","\"Leads\" hedefini seç","Instant Form oluştur (2-3 alan)","Reklam görseli ve metni hazırla","CRM entegrasyonu kur → Yayınla"],
+    kpi:["Lead Volume","CPL","Form Completion Rate"]
+  },
+  sales:{name:"Sales",tr:"Satış",icon:"🛒",color:"#10b981",grad:"sales",sub:"Doğrudan satın alma al",
+    desc:"<strong>Satın alma olasılığı en yüksek kişileri</strong> bulur. Hem web sitesi satışları hem dinamik katalog reklamlar bu hedef altında.",
+    tips:[
+      {e:"🔥",t:"Haftada minimum <strong>50 conversion</strong> gerekli. Ulaşamıyorsan Add to Cart'a optimize et."},
+      {e:"🎯",t:"<strong>Retargeting</strong> kur: siteni ziyaret edip almayanlara tekrar göster — ROAS 5-10x olabilir."},
+      {e:"📈",t:"ROAS hedefini belirle. Genel kural: <strong>3x+ iyi, 5x+ mükemmel</strong>."}
+    ],
+    budget:{min:"₺75/gün",rec:"₺200-500/gün"},
+    setup:["Facebook Pixel kur, purchase event tanımla","\"Sales\" hedefini seç","Conversion event seç (Purchase veya Add to Cart)","Katalog varsa Dynamic Ads kullan","CBO aç → Yayınla"],
+    kpi:["Purchases","ROAS","CPA","Conversion Rate"]
+  },
+  app_promotion:{name:"App Promotion",tr:"Uygulama Tanıtımı",icon:"📱",color:"#6b7280",grad:"app_promotion",sub:"Uygulama indirt ve kullandır",
+    desc:"Uygulamanı <strong>indirme olasılığı yüksek kişileri</strong> bulur. Yeni kullanıcı kazanımı ve mevcut kullanıcı aktivasyonu için.",
+    tips:[
+      {e:"📲",t:"<strong>Facebook SDK</strong>'yı entegre et — uygulama içi olayları takip etmek için şart."},
+      {e:"🎬",t:"Uygulama ekranlarını gösteren <strong>kısa video reklamlar</strong> en yüksek install oranını verir."},
+      {e:"📊",t:"CPI yanında <strong>7 günlük retention</strong> oranını da takip et."}
+    ],
+    budget:{min:"₺50/gün",rec:"₺100-300/gün"},
+    setup:["Facebook Developer portal'a kaydet","Facebook SDK'yı entegre et","\"App Promotion\" hedefini seç","Store linkini gir, video yükle","Kitle belirle → Yayınla"],
+    kpi:["Installs","CPI","Retention Rate"]
+  }
+};
+
+// ══════════════════════════════════════
+//  QUESTIONS (5 + 1 conditional)
+// ══════════════════════════════════════
+const QS=[
+  {id:"biz",title:"İşin",q:"Ne iş yapıyorsun?",note:"Sana özel öneri için işini anlamamız lazım.",show:()=>true,
+    opts:[
+      {id:"restaurant",ic:"🍽️",lb:"Restoran / Kafe",ds:"Fiziksel mekan, müşteri ağırlıyorum",sc:{awareness:2,engagement:1,sales:1}},
+      {id:"retail",ic:"🏪",lb:"Mağaza / Dükkan",ds:"Butik, market, kuaför, eczane vb.",sc:{awareness:2,traffic:1,sales:1}},
+      {id:"ecom",ic:"🛒",lb:"Online Satış / E-ticaret",ds:"Web sitesi, Trendyol, Instagram shop",sc:{sales:3,traffic:2}},
+      {id:"app",ic:"📱",lb:"Mobil Uygulama",ds:"iOS veya Android uygulama",sc:{app_promotion:5,engagement:1}},
+      {id:"service",ic:"💼",lb:"Hizmet (Danışmanlık, Freelance)",ds:"Avukat, doktor, koç, tasarımcı vb.",sc:{leads:3,awareness:1}},
+      {id:"education",ic:"🎓",lb:"Eğitim / Online Kurs",ds:"Kurs, bootcamp, mentorluk",sc:{leads:2,sales:2,traffic:1}},
+      {id:"content",ic:"📝",lb:"İçerik / Influencer",ds:"Blog, YouTube, podcast",sc:{engagement:3,traffic:2,awareness:1}},
+      {id:"event",ic:"🎉",lb:"Etkinlik / Organizasyon",ds:"Konser, workshop, fuar",sc:{awareness:2,engagement:2,leads:1}},
+      {id:"ngo",ic:"🤝",lb:"STK / Dernek",ds:"Bağış, gönüllü, farkındalık",sc:{awareness:3,engagement:2}},
+      {id:"realestate",ic:"🏠",lb:"Gayrimenkul / Emlak",ds:"Emlakçı, müteahhit, proje",sc:{leads:3,awareness:1,sales:1}}
+    ]
+  },
+  {id:"want",title:"Amacın",q:"Şu an en çok ne istiyorsun?",note:"En öncelikli olanı seç — birden fazla istemen normal, ama başlangıç için odaklan.",show:()=>true,
+    opts:[
+      {id:"awareness",ic:"😶",lb:"Tanınsın, bilineyim",ds:"Kimse beni bilmiyor, bilinirlik lazım",sc:{awareness:5,engagement:1}},
+      {id:"visitors",ic:"🌐",lb:"Siteme / mağazama gelsinler",ds:"Ziyaretçi sayım çok düşük",sc:{traffic:5,awareness:1}},
+      {id:"interact",ic:"❤️",lb:"Etkileşim, beğeni, yorum alsam",ds:"Sosyal medyada sessizim",sc:{engagement:5}},
+      {id:"contact",ic:"📞",lb:"Bana ulaşsınlar, form / arama",ds:"Potansiyel müşteri bulamıyorum",sc:{leads:5,traffic:1}},
+      {id:"sell",ic:"💰",lb:"Satış / sipariş alsam",ds:"Trafik var ama dönüşüm yok",sc:{sales:5}},
+      {id:"install",ic:"📲",lb:"Uygulamamı indirsinler",ds:"Store'da görünmüyorum",sc:{app_promotion:5}},
+      {id:"retain",ic:"🔄",lb:"Müşterilerim geri dönsün",ds:"İlk satış var ama tekrar yok",sc:{sales:3,engagement:2,awareness:1}}
+    ]
+  },
+  {id:"channel",title:"İletişim",q:"Müşterinle nasıl iletişim kurmak istiyorsun?",note:"Türkiye'de WhatsApp ve telefon çok güçlü — bu seçim stratejini etkiler.",
+    show:(a)=>!a.find(x=>x.qid==='biz'&&x.oid==='app'),
+    opts:[
+      {id:"whatsapp",ic:"💚",lb:"WhatsApp'tan yazsınlar",ds:"Türkiye'nin #1 iletişim kanalı",sc:{leads:2,engagement:2},flag:"whatsapp"},
+      {id:"phone",ic:"📞",lb:"Telefon etsinler",ds:"Doğrudan arama almak istiyorum",sc:{leads:3},flag:"phone"},
+      {id:"form",ic:"📋",lb:"Form doldursunlar",ds:"E-posta, isim, bilgi toplama",sc:{leads:3}},
+      {id:"buy_online",ic:"🛒",lb:"Siteden direkt alsınlar",ds:"Online sipariş / ödeme",sc:{sales:3,traffic:1}},
+      {id:"visit",ic:"🚶",lb:"Mekanıma gelsinler",ds:"Fiziksel ziyaret istiyorum",sc:{awareness:2,traffic:1}},
+      {id:"dm",ic:"💬",lb:"DM atsınlar (Instagram/FB)",ds:"Sosyal medyadan mesaj",sc:{engagement:3,leads:1},flag:"dm"}
+    ]
+  },
+  {id:"website",title:"Web Sitesi",q:"Web siten var mı?",note:"Bu çok önemli — bazı hedefler site olmadan yarı kapasiteyle çalışır.",
+    show:(a)=>{const b=a.find(x=>x.qid==='biz');return !b||!['app','content','ngo'].includes(b.oid)},
+    opts:[
+      {id:"yes_pixel",ic:"✅",lb:"Evet, Pixel de kurulu",ds:"Facebook tracking entegre",sc:{sales:3,traffic:1}},
+      {id:"yes_nopixel",ic:"🌐",lb:"Evet ama Pixel yok",ds:"Site var, tracking yok",sc:{traffic:2,leads:1},flag:"need_pixel"},
+      {id:"no_social",ic:"📱",lb:"Hayır, sadece sosyal medya",ds:"Instagram / Facebook sayfası var",sc:{engagement:2,leads:1},flag:"no_website"},
+      {id:"building",ic:"🔨",lb:"Yapım aşamasında",ds:"Yakında açılacak",sc:{awareness:2,engagement:1},flag:"no_website"}
+    ]
+  },
+  {id:"budget",title:"Bütçe",q:"Aylık reklam bütçen ne kadar?",note:"Doğru cevap yok — bütçeye göre strateji tamamen değişir.",show:()=>true,
+    opts:[
+      {id:"micro",ic:"💵",lb:"₺500'den az (günlük ~₺15)",ds:"Küçük başlangıç",sc:{engagement:2,awareness:1},flag:"low_budget"},
+      {id:"small",ic:"💰",lb:"₺500 – ₺2.000 (günlük ~₺20-65)",ds:"Makul başlangıç",sc:{traffic:1,leads:1,awareness:1}},
+      {id:"medium",ic:"💎",lb:"₺2.000 – ₺10.000 (günlük ~₺65-330)",ds:"Etkili yatırım",sc:{sales:2,leads:1}},
+      {id:"big",ic:"🚀",lb:"₺10.000+ (günlük ₺330+)",ds:"Ciddi yatırım",sc:{sales:3,leads:1}}
+    ]
+  },
+  // Conditional: experience (always last, simple yes/no vibe)
+  {id:"exp",title:"Deneyim",q:"Daha önce Meta reklamı verdin mi?",note:"Cevabına göre önerilerimizin detay seviyesini ayarlayacağız.",show:()=>true,
+    opts:[
+      {id:"never",ic:"🌱",lb:"Hiç vermedim",ds:"Tamamen yeniyim",sc:{awareness:1,engagement:1},flag:"beginner"},
+      {id:"boost",ic:"📢",lb:"Post boost ettim sadece",ds:"Ads Manager kullanmadım",sc:{engagement:1},flag:"beginner"},
+      {id:"some",ic:"📊",lb:"Birkaç kampanya yaptım",ds:"Temel bilgim var",sc:{}},
+      {id:"pro",ic:"🏆",lb:"Düzenli veriyorum",ds:"Ads Manager'a hakimim",sc:{}}
+    ]
+  }
+];
+
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let answers=[], scores={awareness:0,traffic:0,engagement:0,leads:0,sales:0,app_promotion:0}, flags=new Set();
+
+function visibleQs(){ return QS.filter(q=>q.show(answers)); }
+function answeredIds(){ return new Set(answers.map(a=>a.qid)); }
+function currentQ(){ const vis=visibleQs(), aid=answeredIds(); return vis.find(q=>!aid.has(q.id)); }
+function qIndex(){ const vis=visibleQs(), cq=currentQ(); return cq?vis.indexOf(cq):vis.length; }
+
+// ══════════════════════════════════════
+//  RENDER: STEPPER
+// ══════════════════════════════════════
+function renderStepper(){
+  const vis=visibleQs(), idx=qIndex(), el=document.getElementById('stepper');
+  el.innerHTML=vis.map((q,i)=>{
+    const cls=i<idx?'done':i===idx?'active':'';
+    const line=i>0?`<div class="stp-line ${i<=idx?'done':''}"></div>`:'';
+    return `${line}<div class="stp"><div class="stp-dot ${cls}"></div><div class="stp-label ${cls}">${q.title}</div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+//  RENDER: QUESTION
+// ══════════════════════════════════════
+function renderQuestion(){
+  const q=currentQ(), view=document.getElementById('view');
+  if(!q){renderResult();return;}
+  const num=qIndex()+1;
+  view.innerHTML=`
+    <div class="q-view">
+      <div class="advisor-note"><div class="advisor-av">🚀</div><div class="advisor-msg">${q.note}</div></div>
+      <div class="q-card">
+        <div class="q-num">${num}</div>
+        <div class="q-text">${q.q}</div>
+        <div class="opts">${q.opts.map((o,i)=>`
+          <button class="oc" onclick="pick('${q.id}','${o.id}',${i})">
+            <span class="ic">${o.ic}</span>
+            <span class="ct"><span class="lb">${o.lb}</span><span class="ds">${o.ds}</span></span>
+            <span class="kb">${i+1}</span>
+          </button>
+        `).join('')}</div>
+      </div>
+    </div>
+  `;
+  renderStepper();
+}
+
+function pick(qid,oid,idx){
+  const q=QS.find(x=>x.id===qid), opt=q.opts.find(x=>x.id===oid);
+  answers.push({qid,oid,option:opt});
+  if(opt.sc) for(const[k,v] of Object.entries(opt.sc)) scores[k]=(scores[k]||0)+v;
+  if(opt.flag) flags.add(opt.flag);
+  renderQuestion();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  const q=currentQ();if(!q)return;
+  const idx=parseInt(e.key)-1;
+  if(idx>=0&&idx<q.opts.length) pick(q.id,q.opts[idx].id,idx);
+});
+
+// ══════════════════════════════════════
+//  READINESS ENGINE
+// ══════════════════════════════════════
+function calcReadiness(winId){
+  const r={campaign:{score:0,max:3},measurement:{score:0,max:3},offer:{score:0,max:3},budget:{score:0,max:3}};
+
+  // Campaign readiness
+  r.campaign.score=2; // has business
+  const web=answers.find(a=>a.qid==='website');
+  if(web&&web.oid==='yes_pixel') r.campaign.score=3;
+  else if(web&&web.oid==='yes_nopixel') r.campaign.score=2;
+  else if(flags.has('no_website')) r.campaign.score=1;
+  if(!web) r.campaign.score=2; // skip for app/content
+
+  // Measurement readiness
+  if(web&&web.oid==='yes_pixel') r.measurement.score=3;
+  else if(web&&web.oid==='yes_nopixel') r.measurement.score=1;
+  else if(flags.has('no_website')) r.measurement.score=1;
+  else r.measurement.score=2;
+  if(winId==='engagement'||winId==='awareness') r.measurement.score=Math.max(r.measurement.score,2);
+
+  // Offer clarity
+  const want=answers.find(a=>a.qid==='want');
+  const chan=answers.find(a=>a.qid==='channel');
+  r.offer.score=2;
+  if(want) r.offer.score++;
+  if(chan) r.offer.score=Math.min(r.offer.score,3);
+  if(want&&['retain'].includes(want.oid)) r.offer.score=2;
+
+  // Budget reality
+  const bud=answers.find(a=>a.qid==='budget');
+  if(bud){
+    if(bud.oid==='micro'){
+      r.budget.score=['engagement','awareness'].includes(winId)?2:1;
+    } else if(bud.oid==='small'){
+      r.budget.score=['sales'].includes(winId)?2:3;
+    } else r.budget.score=3;
+  } else r.budget.score=2;
+
+  return r;
+}
+
+function readinessLevel(score,max){
+  const pct=score/max;
+  if(pct>=0.9) return 'green';
+  if(pct>=0.5) return 'yellow';
+  return 'red';
+}
+
+function readinessEmoji(level){ return level==='green'?'🟢':level==='yellow'?'🟡':'🔴'; }
+
+function readinessText(dim,level){
+  const texts={
+    campaign:{green:"Hazırsın",yellow:"Neredeyse hazır, küçük eksikler var",red:"Önce altyapını kurmalısın"},
+    measurement:{green:"Ölçüm yapabilirsin",yellow:"Temel tracking eksik",red:"Ölçüm altyapın yok — kör uçarsın"},
+    offer:{green:"Teklifin net",yellow:"Biraz daha netleştir",red:"Müşteriye ne sunduğunu netleştirmelisin"},
+    budget:{green:"Bütçen uygun",yellow:"Sıkı ama idare eder",red:"Bu hedef için bütçen yetersiz"}
+  };
+  return texts[dim]?.[level]||"";
+}
+
+// ══════════════════════════════════════
+//  RENDER: RESULT
+// ══════════════════════════════════════
+function renderResult(){
+  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const total=sorted.reduce((s,[,v])=>s+v,0)||1;
+  const winId=sorted[0][0], win=OBJ[winId];
+  const altId=sorted[1][0], alt=OBJ[altId];
+
+  const readiness=calcReadiness(winId);
+  const dims=['campaign','measurement','offer','budget'];
+  const dimNames={campaign:'Kampanya Altyapısı',measurement:'Ölçüm Hazırlığı',offer:'Teklif Netliği',budget:'Bütçe Uyumu'};
+  const dimIcons={campaign:'🔧',measurement:'📐',offer:'💬',budget:'💰'};
+
+  const totalReady=dims.reduce((s,d)=>s+readiness[d].score,0);
+  const maxReady=dims.reduce((s,d)=>s+readiness[d].max,0);
+  const readyPct=Math.round((totalReady/maxReady)*100);
+  const readyLabel=readyPct>=80?'Hazırsın!':readyPct>=55?'Neredeyse Hazır':'Önce Hazırlan';
+
+  // Build why explanation
+  const biz=answers.find(a=>a.qid==='biz'), want=answers.find(a=>a.qid==='want');
+  let whyText=`<strong>${biz?biz.option.lb:'İşletmen'}</strong> olarak <strong>${want?want.option.lb.toLowerCase():'hedefine ulaşmak'}</strong> istediğini söyledin. `;
+  whyText+=`${win.name} hedefi tam olarak bu duruma göre tasarlanmış — ${win.desc.replace(/<[^>]*>/g,'').substring(0,120)}...`;
+
+  // Prereqs
+  const prereqs=buildPrereqs(winId);
+
+  // 14-day plan
+  const plan=build14DayPlan(winId);
+
+  // Dont do
+  const donts=buildDonts(winId);
+
+  // Success check
+  const checks=buildSuccessChecks(winId);
+
+  // Specials
+  const showWA=flags.has('whatsapp')||flags.has('dm')||flags.has('phone');
+  const showNoWeb=flags.has('no_website');
+  const showPixel=flags.has('need_pixel');
+  const showLowBud=flags.has('low_budget');
+  const showBeginner=flags.has('beginner');
+
+  // Score display (simplified: best / alt / others)
+  const scoreHtml=sorted.map(([id])=>{
+    const o=OBJ[id];
+    const cls=id===winId?'best':id===altId?'alt':'skip';
+    const label=id===winId?'En Uygun Başlangıç':id===altId?'İyi Alternatif':'Şimdilik değil';
+    return `<div class="score-row"><span class="score-chip ${cls}">${label}</span><span class="score-name">${o.icon} ${o.tr} (${o.name})</span></div>`;
+  }).join('');
+
+  const view=document.getElementById('view');
+  view.innerHTML=`
+    <div class="result-view">
+      <!-- HERO -->
+      <div class="res-hero"><div class="res-hero-inner ${win.grad}">
+        <div class="res-readiness-badge">${readyLabel} · Hazırlık ${readyPct}%</div>
+        <div class="res-icon">${win.icon}</div>
+        <div class="res-name">${win.name}</div>
+        <div class="res-sub">${win.sub}</div>
+      </div></div>
+
+      <!-- LAYER 1: Why + Readiness (always open) -->
+      <div class="layer"><div class="layer1-card">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-d);margin-bottom:8px">📖 Neden Bu Hedef?</div>
+        <div class="layer1-why">${whyText}</div>
+        <div style="margin-top:14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-d);margin-bottom:8px">📊 Reklam Hazırlık Raporu</div>
+        <div class="readiness-grid">
+          ${dims.map(d=>{const lv=readinessLevel(readiness[d].score,readiness[d].max);return`
+            <div class="rd-item ${lv}"><span class="rd-light">${readinessEmoji(lv)}</span><div class="rd-body"><div class="rd-label">${dimIcons[d]} ${dimNames[d]}</div><div class="rd-desc">${readinessText(d,lv)}</div></div></div>
+          `;}).join('')}
+        </div>
+      </div></div>
+
+      <!-- LAYER 2: Fix Before Launch -->
+      ${prereqs.length?`
+      <div class="layer">${makeLayer('✅','Reklam Vermeden Önce Yap',prereqs.map(p=>`<div class="ck ${p.lv}"><span class="ci">${p.ic}</span><span class="cx">${p.tx}</span></div>`).join(''),true)}</div>
+      `:''}
+
+      <!-- SPECIALS -->
+      ${showWA?`<div class="special wa"><span class="si">💚</span><span class="st"><strong>WhatsApp Stratejisi:</strong> "Click to WhatsApp" reklam formatını kullan. Engagement veya Leads hedefiyle WhatsApp'a yönlendiren reklamlar Türkiye'de çok etkili. Kampanya oluştururken "Messaging Apps" seçeneğini aktif et.</span></div>`:''}
+      ${showNoWeb?`<div class="special noweb"><span class="si">🌐</span><span class="st"><strong>Web Siten Yok — Sorun Değil!</strong><br>• Leads + Instant Forms = Facebook içi form, site gerekmez<br>• WhatsApp'a yönlendirme ile direkt mesaj al<br>• Instagram Shop ile sosyal medyadan sat<br>Uzun vadede basit bir site kurmayı düşün (Wix, Shopify).</span></div>`:''}
+      ${showPixel?`<div class="special pixel"><span class="si">🔧</span><span class="st"><strong>Facebook Pixel Kurmalısın!</strong> Pixel olmadan Sales ve Traffic yarı kapasiteyle çalışır. Pixel sayesinde ziyaretçileri retargeting ile hedeflersin ve algoritma kimin aldığını öğrenir.<br><strong>Nasıl:</strong> Meta Business Suite → Events Manager → Pixel Kur</span></div>`:''}
+      ${showLowBud?`<div class="special budget"><span class="si">💡</span><span class="st"><strong>Düşük Bütçe İpuçları:</strong><br>• Sales hedefinden kaçın — öğrenme fazını geçemezsin<br>• Engagement veya Awareness ile başla<br>• En iyi organik postunu boost et — ucuz ve etkili<br>• Bütçe artınca Sales/Leads'e geç</span></div>`:''}
+      ${showBeginner?`<div class="special beginner"><span class="si">🌱</span><span class="st"><strong>Yeni Başlayan İçin:</strong><br>• İlk kampanyanda karmaşık hedef seçme, ${readyPct>=70?win.name:'Awareness veya Engagement'} ile başla<br>• Otomatik yerleşim (Advantage+) kullan<br>• İlk 3 gün panik yapma — algoritmaya 3-7 gün öğrenme süresi ver<br>• Ads Manager karmaşık gelirse "Tanıt" butonu ile başla</span></div>`:''}
+
+      <!-- LAYER 3: 14-Day Plan -->
+      <div class="layer">${makeLayer('📅','İlk 14 Günlük Planın',plan,true)}</div>
+
+      <!-- LAYER 4: Don't Do Yet + Success Check -->
+      <div class="layer">${makeLayer('🚫','Henüz YAPMA',donts.map(d=>`<div class="dont"><span style="flex-shrink:0">❌</span><span>${d}</span></div>`).join(''))}</div>
+      <div class="layer">${makeLayer('✅','Çalışıp Çalışmadığını Böyle Anlarsın',checks.map(c=>`<div class="suc"><span style="flex-shrink:0">📊</span><span>${c}</span></div>`).join(''))}</div>
+
+      <!-- LAYER 5: Deep Details (collapsed) -->
+      <div class="layer">${makeLayer('💡',win.name+' İçin İpuçları',win.tips.map(t=>`<div class="tip"><span style="flex-shrink:0">${t.e}</span><span>${t.t}</span></div>`).join(''))}</div>
+      <div class="layer">${makeLayer('🚀','Adım Adım Kurulum',win.setup.map((s,i)=>`<div class="ck ok"><span class="ci" style="font-size:.75rem;font-weight:700;color:var(--green)">${i+1}</span><span class="cx">${s}</span></div>`).join(''))}</div>
+      <div class="layer">${makeLayer('📊','Diğer Hedeflerle Karşılaştırma',scoreHtml)}</div>
+      <div class="layer">${makeLayer('📈','Takip Etmen Gereken Metrikler (KPI)',`<div style="display:flex;gap:5px;flex-wrap:wrap">${win.kpi.map(k=>`<span style="display:inline-block;padding:5px 11px;background:var(--surface);border:1px solid var(--border);border-radius:7px;font-size:.74rem;font-weight:600;color:var(--text-m)">${k}</span>`).join('')}</div><p style="font-size:.72rem;color:var(--text-d);margin-top:8px;font-style:italic">Önerilen bütçe: minimum ${win.budget.min}, önerilen ${win.budget.rec}</p>`)}</div>
+
+      <!-- ACTIONS -->
+      <div class="acts">
+        <button class="ab pr" onclick="restart()">🔄 Tekrar Başla</button>
+        <button class="ab gh" onclick="copyResult('${winId}',${readyPct})">📋 Sonucu Kopyala</button>
+      </div>
+      <p style="text-align:center;font-size:.68rem;color:var(--text-d);margin-top:14px;line-height:1.5">Bu öneri, verdiğin cevaplara dayanan bir <strong>başlangıç noktası</strong>. Kesin reçete değildir.<br>2 hafta test et, verilere bak, gerekirse strateji değiştir.</p>
+    </div>
+  `;
+  renderStepper();
+  setTimeout(launchConfetti,200);
+}
+
+function makeLayer(icon,title,content,openDefault){
+  const id='layer_'+Math.random().toString(36).substr(2,5);
+  return `<div class="lc"><div class="lc-head ${openDefault?'open':''}" onclick="toggleLayer('${id}',this)"><span class="li">${icon}</span><span class="lt">${title}</span><span class="arrow">▼</span></div><div class="lc-body ${openDefault?'open':''}" id="${id}"><div class="lc-content">${content}</div></div></div>`;
+}
+
+function toggleLayer(id,head){
+  const body=document.getElementById(id);
+  body.classList.toggle('open');
+  head.classList.toggle('open');
+}
+
+// ══════════════════════════════════════
+//  PREREQS / PLAN / DONTS / CHECKS
+// ══════════════════════════════════════
+function buildPrereqs(winId){
+  const p=[];
+  p.push({lv:'must',ic:'🔴',tx:'<strong>Meta Business Suite</strong> hesabı oluştur → business.facebook.com'});
+  p.push({lv:'must',ic:'🔴',tx:'<strong>Facebook Sayfası</strong> ve/veya <strong>Instagram İşletme Hesabı</strong> aç'});
+  if(['sales','traffic'].includes(winId)&&!flags.has('no_website')) p.push({lv:'must',ic:'🔴',tx:'<strong>Facebook Pixel</strong> kodunu web sitene kur'});
+  if(winId==='sales') p.push({lv:'should',ic:'🟡',tx:'<strong>Conversion API</strong> kur — iOS 14+ sonrası tracking için önemli'});
+  if(winId==='app_promotion'){p.push({lv:'must',ic:'🔴',tx:'<strong>Facebook SDK</strong> uygulamana entegre et'});p.push({lv:'must',ic:'🔴',tx:'<strong>Developer Portal</strong>\'a kaydet'});}
+  if(winId==='leads') p.push({lv:'should',ic:'🟡',tx:'<strong>Lead magnet</strong> hazırla — ücretsiz e-kitap, indirim kodu, deneme'});
+  if(flags.has('whatsapp')||flags.has('phone')) p.push({lv:'should',ic:'🟡',tx:'<strong>WhatsApp Business</strong> hesabı aç ve Meta\'ya bağla'});
+  p.push({lv:'ok',ic:'🟢',tx:'3-4 farklı <strong>reklam görseli / videosu</strong> önceden hazırla'});
+  return p;
+}
+
+function build14DayPlan(winId){
+  const obj=OBJ[winId];
+  return `
+    <div class="plan-phase"><div class="plan-phase-head"><span class="plan-days" style="background:var(--accent)">Gün 1-3</span><span class="plan-title">Hazırlık</span></div><div class="plan-tasks"><ul>
+      <li>Yukarıdaki <strong>ön gereksinimleri</strong> tamamla</li>
+      <li>Reklam görsellerini / videolarını hazırla (min. 3 varyasyon)</li>
+      <li>Hedef kitleni tanımla (konum, yaş, ilgi alanları)</li>
+      <li>Reklam metnini yaz — kısa, net, aksiyon odaklı</li>
+    </ul></div></div>
+    <div class="plan-phase"><div class="plan-phase-head"><span class="plan-days" style="background:var(--green)">Gün 4-5</span><span class="plan-title">Lansman</span></div><div class="plan-tasks"><ul>
+      <li>Ads Manager'da kampanyayı oluştur → <strong>${obj.name}</strong> hedefini seç</li>
+      <li>Tek bir ad set, 3 farklı görsel ile başla</li>
+      <li>Bütçeyi ayarla → <strong>Yayınla</strong></li>
+      <li>İlk 24 saat: Meta reklam inceleme süreci (onay bekleme)</li>
+    </ul></div></div>
+    <div class="plan-phase"><div class="plan-phase-head"><span class="plan-days" style="background:var(--orange)">Gün 6-10</span><span class="plan-title">Öğrenme Fazı — Dokunma!</span></div><div class="plan-tasks"><ul>
+      <li><strong>Bu sürede değişiklik yapma</strong> — algoritma öğreniyor</li>
+      <li>Günlük ${obj.kpi[0]} ve ${obj.kpi.length>1?obj.kpi[1]:'maliyet'} metriklerine göz at</li>
+      <li>Sonuçlar kötü görünebilir — <strong>normal, panik yapma</strong></li>
+      <li>Minimum 50 sonuç (tıklama/etkileşim/lead) hedefle</li>
+    </ul></div></div>
+    <div class="plan-phase"><div class="plan-phase-head"><span class="plan-days" style="background:var(--gold)">Gün 11-14</span><span class="plan-title">İlk Değerlendirme</span></div><div class="plan-tasks"><ul>
+      <li>En iyi çalışan görseli belirle, diğerlerini kapat</li>
+      <li>Maliyetleri kontrol et (kabul edilebilir aralıkta mı?)</li>
+      <li>İyi gidiyorsa: bütçeyi %20-30 artır</li>
+      <li>Kötü gidiyorsa: görselleri değiştir, hedef kitleyi daralt</li>
+    </ul></div></div>
+  `;
+}
+
+function buildDonts(winId){
+  const d=[
+    '<strong>Birden fazla kampanya açma</strong> — bütçeni bölme, tek kampanyaya odaklan.',
+    '<strong>İlk 5 gün değişiklik yapma</strong> — algoritma öğrenme fazında. Müdahale edersen sıfırlanır.',
+    '<strong>Çok dar hedef kitle seçme</strong> — Meta\'nın algoritmasına alan bırak.'
+  ];
+  if(flags.has('low_budget')) d.push('<strong>Sales hedefiyle başlama</strong> — bu bütçeyle öğrenme fazını geçemezsin. Awareness veya Engagement ile başla.');
+  if(flags.has('beginner')) d.push('<strong>Karmaşık hedefleme yapma</strong> — yaş + konum + 1-2 ilgi alanı yeterli. Overcomplication harcamanı artırır.');
+  d.push('<strong>İlk 3 günde pes etme</strong> — en yaygın hata bu. Algoritmaya zaman ver.');
+  return d;
+}
+
+function buildSuccessChecks(winId){
+  const m={
+    awareness:['<strong>7. günde:</strong> Reach (erişim) sayısı artıyor mu? CPM (1000 gösterim başı maliyet) düşük mü?','<strong>14. günde:</strong> Ad Recall Lift tahminini kontrol et. Video varsa izlenme süresine bak.'],
+    traffic:['<strong>7. günde:</strong> CPC (tıklama başı maliyet) makul mü? Landing page views artıyor mu?','<strong>14. günde:</strong> Sitene gelen trafiği Google Analytics\'te kontrol et. Bounce rate %70\'in altındaysa iyi.'],
+    engagement:['<strong>7. günde:</strong> Beğeni, yorum, paylaşım sayıları artıyor mu? CPE (etkileşim başı maliyet) düşüyor mu?','<strong>14. günde:</strong> En çok etkileşim alan post hangisi? Bu tarz içeriklere yönel.'],
+    leads:['<strong>7. günde:</strong> CPL (lead başı maliyet) kabul edilebilir mi? Form tamamlama oranı %20+ mı?','<strong>14. günde:</strong> Gelen lead\'lerin kalitesi nasıl? Gerçek müşteriye dönüyor mu?'],
+    sales:['<strong>7. günde:</strong> CPA (satış başı maliyet) ve ROAS\'ı kontrol et. Haftada 50 conversion\'a yaklaşıyor musun?','<strong>14. günde:</strong> ROAS 3x+ ise iyi gidiyorsun. 1x altındaysa görselleri değiştir veya hedefi gözden geçir.'],
+    app_promotion:['<strong>7. günde:</strong> CPI (install başı maliyet) sektör ortalamasında mı?','<strong>14. günde:</strong> 7 günlük retention oranı %20+ mı? İndirip siliyorlarsa creative\'i veya store page\'i düzelt.']
+  };
+  return m[winId]||m.awareness;
+}
+
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
+function restart(){
+  answers=[];scores={awareness:0,traffic:0,engagement:0,leads:0,sales:0,app_promotion:0};flags=new Set();
+  renderQuestion();window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function copyResult(winId,readyPct){
+  const o=OBJ[winId],path=answers.map(a=>`• ${a.option.lb}`).join('\n');
+  const t=`🚀 AdReady Sonucun\n\n🎯 Hedef: ${o.name} (${o.tr})\n📊 Hazırlık: ${readyPct}%\n\n${o.desc.replace(/<[^>]*>/g,'')}\n\nCevapların:\n${path}\n\n— adready.app`;
+  navigator.clipboard.writeText(t).then(()=>showToast('Panoya kopyalandı!')).catch(()=>showToast('Kopyalanamadı'));
+}
+
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+function launchConfetti(){
+  const b=document.createElement('div');b.className='conf';document.body.appendChild(b);
+  const cols=['#f5b731','#7c6df0','#34d399','#ec4899','#60a5fa','#fb923c','#f87171'];
+  for(let i=0;i<80;i++){const p=document.createElement('div');p.className='cp';const s=Math.random()*9+5;
+    p.style.cssText=`left:${Math.random()*100}%;width:${s}px;height:${s}px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${Math.random()*2+1.5}s;animation-delay:${Math.random()*.5}s;`;
+    b.appendChild(p);}setTimeout(()=>b.remove(),4000);
+}
+
+// BG
+const cv=document.getElementById('bg'),cx=cv.getContext('2d');let pts=[];
+function rsz(){cv.width=innerWidth;cv.height=innerHeight}addEventListener('resize',rsz);rsz();
+class P{constructor(){this.r()}r(){this.x=Math.random()*cv.width;this.y=Math.random()*cv.height;this.s=Math.random()*1.2+.3;this.vx=(Math.random()-.5)*.12;this.vy=(Math.random()-.5)*.12;this.o=Math.random()*.1+.02;this.c=Math.random()>.6?'124,109,240':'245,183,49'}u(){this.x+=this.vx;this.y+=this.vy;if(this.x<-20||this.x>cv.width+20||this.y<-20||this.y>cv.height+20)this.r()}d(){cx.beginPath();cx.arc(this.x,this.y,this.s,0,Math.PI*2);cx.fillStyle=`rgba(${this.c},${this.o})`;cx.fill()}}
+for(let i=0;i<35;i++)pts.push(new P());
+function abg(){cx.clearRect(0,0,cv.width,cv.height);pts.forEach(p=>{p.u();p.d()});
+for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<100){cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);cx.strokeStyle=`rgba(124,109,240,${((100-d)/100)*.025})`;cx.lineWidth=.5;cx.stroke()}}requestAnimationFrame(abg)}abg();
+
+// INIT
+renderQuestion();
+</script>
+</body>
+</html>
